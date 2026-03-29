@@ -4,6 +4,7 @@ go 1.26.1
 
 require (
 	github.com/google/go-github/v69 v69.2.0
+	github.com/holiday-jp/holiday_jp-go v0.0.0-20220125203534-53124b4cc19c
 	github.com/slack-go/slack v0.20.0
 )
 

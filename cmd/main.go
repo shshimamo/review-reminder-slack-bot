@@ -5,13 +5,21 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
+	holiday "github.com/holiday-jp/holiday_jp-go"
 	"github.com/shshimamo/review-reminder-slack-bot/internal/config"
 	gh "github.com/shshimamo/review-reminder-slack-bot/internal/github"
 	sl "github.com/shshimamo/review-reminder-slack-bot/internal/slack"
 )
 
 func main() {
+	today := time.Now()
+	if holiday.IsHoliday(today) {
+		log.Println("Today is a holiday, skipping")
+		return
+	}
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
