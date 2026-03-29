@@ -52,7 +52,7 @@ func main() {
 			continue
 		}
 
-		if status.IsMerged {
+		if status.IsMerged || status.IsClosed {
 			continue
 		}
 

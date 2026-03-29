@@ -45,7 +45,7 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("REQUIRED_APPROVALS_NUMBER must be a number: %w", err)
 	}
 
-	daysAgo := 7
+	daysAgo := 14
 	if v := os.Getenv("DAYS_AGO"); v != "" {
 		daysAgo, err = strconv.Atoi(v)
 		if err != nil {
