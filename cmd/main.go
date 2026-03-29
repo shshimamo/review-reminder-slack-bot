@@ -77,6 +77,7 @@ func main() {
 			Title:      status.Title,
 			StatusText: statusText,
 			Mentions:   prMsg.Mentions,
+			PostedAt:   prMsg.PostedAt,
 		})
 	}
 
