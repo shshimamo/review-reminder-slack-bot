@@ -23,8 +23,9 @@ type ReviewStatus struct {
 	Number    int
 	Title     string
 	IsMerged  bool
-	IsClosed  bool
-	Approvals []string // Approve 済みのレビュアーのログイン名
+	IsClosed           bool
+	HasPendingReview   bool   // レビュー待ちの人/チームがいるか
+	Approvals          []string // Approve 済みのレビュアーのログイン名
 }
 
 func (c *Client) GetReviewStatus(ctx context.Context, owner, repo string, number int) (*ReviewStatus, error) {
@@ -38,11 +39,12 @@ func (c *Client) GetReviewStatus(ctx context.Context, owner, repo string, number
 		Repo:     repo,
 		Number:   number,
 		Title:    pr.GetTitle(),
-		IsMerged: pr.GetMerged(),
-		IsClosed: pr.GetState() == "closed",
+		IsMerged:         pr.GetMerged(),
+		IsClosed:         pr.GetState() == "closed",
+		HasPendingReview: len(pr.RequestedReviewers) > 0 || len(pr.RequestedTeams) > 0,
 	}
 
-	if status.IsMerged || status.IsClosed {
+	if status.IsMerged || status.IsClosed || !status.HasPendingReview {
 		return status, nil
 	}
 
