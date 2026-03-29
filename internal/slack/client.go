@@ -23,12 +23,12 @@ func NewClient(token string) *Client {
 }
 
 type PRMessage struct {
-	Owner    string
-	Repo     string
-	Number   int
-	URL      string
-	Mentions []string // メンション文字列 (<@U123>, <!subteam^S123> 等)
-	PostedAt time.Time
+	Owner    string    // PRオーナー
+	Repo     string    // PRリポジトリ
+	Number   int       // PR番号
+	URL      string    // PR URL
+	Mentions []string  // メンション文字列 (<@U123>, <!subteam^S123> 等)
+	PostedAt time.Time // Slack投稿日
 }
 
 type ChannelMessage struct {
@@ -111,7 +111,7 @@ func ExtractPRMessages(messages []ChannelMessage, completeStamp string) []PRMess
 	})
 
 	var prMessages []PRMessage
-	seen := make(map[string]bool)
+	seen := make(map[string]bool) // 重複排除用マップ
 
 	for _, msg := range messages {
 		if hasCompleteStamp(msg.Reactions, completeStamp) {
@@ -129,9 +129,11 @@ func ExtractPRMessages(messages []ChannelMessage, completeStamp string) []PRMess
 			owner := match[1]
 			repo := match[2]
 			number := match[3]
-			url := match[0]
+			url := match[0] // 0:正規表現マッチ全体
 
 			key := fmt.Sprintf("%s/%s#%s", owner, repo, number)
+
+			// 処理済みの場合はスキップ
 			if seen[key] {
 				continue
 			}
@@ -207,12 +209,12 @@ func FormatReminderMessage(reminders []Reminder) string {
 }
 
 type Reminder struct {
-	Owner      string
-	Repo       string
-	Number     int
-	URL        string
-	Title      string
-	StatusText string
-	Mentions   []string
-	PostedAt   time.Time
+	Owner      string    // PR オーナー
+	Repo       string    // PR リポジトリ
+	Number     int       // PR 番号
+	URL        string    // PR URL
+	Title      string    // PR タイトル
+	StatusText string    // レビュー状況のテキスト
+	Mentions   []string  // メンション
+	PostedAt   time.Time // Slack投稿日
 }
