@@ -12,3 +12,4 @@ docker-build:
 
 docker-run:
 	docker run --env-file .env review-reminder
+
