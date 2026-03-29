@@ -1,0 +1,28 @@
+name: Review Reminder
+
+on:
+  schedule:
+    - cron: '0 1 * * 1-5' # JST 10:00 Mon-Fri
+  workflow_dispatch: # 手動実行用
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Run reminder
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          COMPLETE_STAMP: ${{ secrets.COMPLETE_STAMP }}
+          REQUIRED_APPROVALS_NUMBER: ${{ secrets.REQUIRED_APPROVALS_NUMBER }}
+          TZ: Asia/Tokyo
+        run: go run ./cmd

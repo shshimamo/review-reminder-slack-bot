@@ -8,12 +8,15 @@ import (
 	"time"
 
 	holiday "github.com/holiday-jp/holiday_jp-go"
+	"github.com/joho/godotenv"
 	"github.com/shshimamo/review-reminder-slack-bot/internal/config"
 	gh "github.com/shshimamo/review-reminder-slack-bot/internal/github"
 	sl "github.com/shshimamo/review-reminder-slack-bot/internal/slack"
 )
 
 func main() {
+	_ = godotenv.Load()
+
 	today := time.Now()
 	if holiday.IsHoliday(today) {
 		log.Println("Today is a holiday, skipping")
@@ -28,7 +31,7 @@ func main() {
 	slackClient := sl.NewClient(cfg.SlackBotToken)
 	githubClient := gh.NewClient(cfg.GitHubToken)
 
-	messages, err := slackClient.GetYesterdayMessages(cfg.SlackChannel)
+	messages, err := slackClient.GetMessages(cfg.SlackChannel, cfg.DaysAgo)
 	if err != nil {
 		log.Fatalf("Failed to get messages: %v", err)
 	}
@@ -58,15 +61,12 @@ func main() {
 			continue
 		}
 
+		remaining := cfg.RequiredApprovalsNumber - approvalCount
 		var statusText string
-		switch {
-		case approvalCount == 0:
-			statusText = "レビュー未着手"
-		default:
-			statusText = fmt.Sprintf("%s がレビュー済み / あと%d名必要",
-				strings.Join(status.Approvals, ", "),
-				cfg.RequiredApprovalsNumber-approvalCount,
-			)
+		if approvalCount == 0 {
+			statusText = fmt.Sprintf("あと%d名", remaining)
+		} else {
+			statusText = fmt.Sprintf("あと%d名(%s レビュー済み)", remaining, strings.Join(status.Approvals, ", "))
 		}
 
 		reminders = append(reminders, sl.Reminder{
