@@ -1,0 +1,22 @@
+display_information:
+  name: Review Reminder
+  description: GitHub PR のレビュー状況をリマインドする Bot
+  background_color: "#2EA44F"
+
+features:
+  bot_user:
+    display_name: review-reminder
+    always_online: false
+
+oauth_config:
+  scopes:
+    bot:
+      - channels:history
+      - groups:history
+      - reactions:read
+      - chat:write
+
+settings:
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
