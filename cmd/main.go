@@ -8,12 +8,15 @@ import (
 	"time"
 
 	holiday "github.com/holiday-jp/holiday_jp-go"
+	"github.com/joho/godotenv"
 	"github.com/shshimamo/review-reminder-slack-bot/internal/config"
 	gh "github.com/shshimamo/review-reminder-slack-bot/internal/github"
 	sl "github.com/shshimamo/review-reminder-slack-bot/internal/slack"
 )
 
 func main() {
+	_ = godotenv.Load()
+
 	today := time.Now()
 	if holiday.IsHoliday(today) {
 		log.Println("Today is a holiday, skipping")
