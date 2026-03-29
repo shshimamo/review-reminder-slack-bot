@@ -27,7 +27,7 @@ type PRMessage struct {
 	Repo     string
 	Number   int
 	URL      string
-	Mentions []string // raw mention strings like <@U123>, <!subteam^S123>
+	Mentions []string // メンション文字列 (<@U123>, <!subteam^S123> 等)
 	PostedAt time.Time
 }
 
@@ -42,7 +42,7 @@ var (
 	mentionRegex = regexp.MustCompile(`<@[^>]+>|<!subteam\^[^>]+>`)
 )
 
-// GetMessages retrieves messages from the channel posted within the last daysAgo days.
+// GetMessages は指定チャンネルの過去 daysAgo 日分のメッセージを取得する。
 func (c *Client) GetMessages(channelID string, daysAgo int) ([]ChannelMessage, error) {
 	now := time.Now()
 	startDay := now.AddDate(0, 0, -daysAgo)
@@ -103,9 +103,9 @@ func parseSlackTimestamp(ts string, loc *time.Location) time.Time {
 	return time.Unix(sec, 0).In(loc)
 }
 
-// ExtractPRMessages extracts GitHub PR links and mentions from messages.
+// ExtractPRMessages はメッセージから GitHub PR リンクとメンションを抽出する。
 func ExtractPRMessages(messages []ChannelMessage, completeStamp string) []PRMessage {
-	// Sort oldest first so the earliest post is adopted for duplicate PRs
+	// 古い順にソートし、重複PRは最初の投稿を採用する
 	sort.Slice(messages, func(i, j int) bool {
 		return messages[i].Timestamp.Before(messages[j].Timestamp)
 	})
@@ -163,7 +163,7 @@ func hasCompleteStamp(reactions []string, completeStamp string) bool {
 	return false
 }
 
-// PostMessage sends a message to the channel.
+// PostMessage はチャンネルにメッセージを投稿する。
 func (c *Client) PostMessage(channelID, text string) error {
 	_, _, err := c.api.PostMessage(channelID, slack.MsgOptionText(text, false))
 	if err != nil {
@@ -172,13 +172,13 @@ func (c *Client) PostMessage(channelID, text string) error {
 	return nil
 }
 
-// FormatReminderMessage builds the reminder message text grouped by posting date.
+// FormatReminderMessage はリマインドメッセージを投稿日ごとにグループ化して生成する。
 func FormatReminderMessage(reminders []Reminder) string {
 	if len(reminders) == 0 {
 		return ""
 	}
 
-	// Sort by PostedAt ascending (oldest first)
+	// 投稿日の古い順にソート
 	sort.Slice(reminders, func(i, j int) bool {
 		return reminders[i].PostedAt.Before(reminders[j].PostedAt)
 	})

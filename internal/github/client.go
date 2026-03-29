@@ -23,7 +23,7 @@ type ReviewStatus struct {
 	Number    int
 	Title     string
 	IsMerged  bool
-	Approvals []string // approved reviewer logins
+	Approvals []string // Approve 済みのレビュアーのログイン名
 }
 
 func (c *Client) GetReviewStatus(ctx context.Context, owner, repo string, number int) (*ReviewStatus, error) {
@@ -49,7 +49,7 @@ func (c *Client) GetReviewStatus(ctx context.Context, owner, repo string, number
 		return nil, fmt.Errorf("failed to get reviews for %s/%s#%d: %w", owner, repo, number, err)
 	}
 
-	// Use map to track latest review state per reviewer
+	// レビュアーごとの最新のレビュー状態を追跡
 	latestReview := make(map[string]string)
 	for _, r := range reviews {
 		login := r.GetUser().GetLogin()
