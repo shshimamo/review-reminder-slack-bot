@@ -1,4 +1,4 @@
-module github.com/shshimamo/review-reminder
+module github.com/shshimamo/review-reminder-slack-bot
 
 go 1.26.1
 

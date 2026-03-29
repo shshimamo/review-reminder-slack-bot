@@ -6,9 +6,9 @@ import (
 	"log"
 	"strings"
 
-	"github.com/shshimamo/review-reminder/internal/config"
-	gh "github.com/shshimamo/review-reminder/internal/github"
-	sl "github.com/shshimamo/review-reminder/internal/slack"
+	"github.com/shshimamo/review-reminder-slack-bot/internal/config"
+	gh "github.com/shshimamo/review-reminder-slack-bot/internal/github"
+	sl "github.com/shshimamo/review-reminder-slack-bot/internal/slack"
 )
 
 func main() {
