@@ -37,15 +37,15 @@ var (
 	mentionRegex = regexp.MustCompile(`<@[^>]+>|<!subteam\^[^>]+>`)
 )
 
-// GetYesterdayMessages retrieves messages from the channel posted yesterday.
-func (c *Client) GetYesterdayMessages(channelID string) ([]ChannelMessage, error) {
+// GetMessages retrieves messages from the channel posted daysAgo days before today.
+func (c *Client) GetMessages(channelID string, daysAgo int) ([]ChannelMessage, error) {
 	now := time.Now()
-	yesterday := now.AddDate(0, 0, -1)
-	startOfYesterday := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, now.Location())
-	endOfYesterday := startOfYesterday.AddDate(0, 0, 1)
+	targetDay := now.AddDate(0, 0, -daysAgo)
+	startOfDay := time.Date(targetDay.Year(), targetDay.Month(), targetDay.Day(), 0, 0, 0, 0, now.Location())
+	endOfDay := startOfDay.AddDate(0, 0, 1)
 
-	oldest := fmt.Sprintf("%d", startOfYesterday.Unix())
-	latest := fmt.Sprintf("%d", endOfYesterday.Unix())
+	oldest := fmt.Sprintf("%d", startOfDay.Unix())
+	latest := fmt.Sprintf("%d", endOfDay.Unix())
 
 	var allMessages []ChannelMessage
 	cursor := ""
@@ -155,14 +155,13 @@ func FormatReminderMessage(reminders []Reminder) string {
 	}
 
 	var b strings.Builder
-	b.WriteString("*:eyes: レビューリマインド*\n\n")
+	b.WriteString("レビューリマインド\n")
 
 	for _, r := range reminders {
-		b.WriteString(fmt.Sprintf("<%s|%s/%s#%d> - %s\n", r.URL, r.Owner, r.Repo, r.Number, r.Title))
-		b.WriteString(fmt.Sprintf("  %s\n", r.StatusText))
 		if len(r.Mentions) > 0 {
-			b.WriteString(fmt.Sprintf("  %s\n", strings.Join(r.Mentions, " ")))
+			b.WriteString(strings.Join(r.Mentions, " ") + "\n")
 		}
+		b.WriteString(fmt.Sprintf("<%s|%s/%s#%d> - %s / %s\n", r.URL, r.Owner, r.Repo, r.Number, r.Title, r.StatusText))
 		b.WriteString("\n")
 	}
 

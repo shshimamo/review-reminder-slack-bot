@@ -12,6 +12,7 @@ type Config struct {
 	GitHubToken             string
 	CompleteStamp           string
 	RequiredApprovalsNumber int
+	DaysAgo                int
 }
 
 func Load() (*Config, error) {
@@ -44,11 +45,20 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("REQUIRED_APPROVALS_NUMBER must be a number: %w", err)
 	}
 
+	daysAgo := 1
+	if v := os.Getenv("DAYS_AGO"); v != "" {
+		daysAgo, err = strconv.Atoi(v)
+		if err != nil {
+			return nil, fmt.Errorf("DAYS_AGO must be a number: %w", err)
+		}
+	}
+
 	return &Config{
 		SlackBotToken:           slackBotToken,
 		SlackChannel:            slackChannel,
 		GitHubToken:             githubToken,
 		CompleteStamp:           completeStamp,
 		RequiredApprovalsNumber: requiredApprovals,
+		DaysAgo:                daysAgo,
 	}, nil
 }
