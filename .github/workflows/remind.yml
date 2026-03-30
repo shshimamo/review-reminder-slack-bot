@@ -2,7 +2,7 @@ name: Review Reminder
 
 on:
   schedule:
-    - cron: '0 1 * * 1-5' # JST 10:00 Mon-Fri
+    - cron: '30 0 * * 1-5' # JST 9:30 Mon-Fri
   workflow_dispatch: # 手動実行用
 
 jobs:
