@@ -36,7 +36,7 @@ func main() {
 		log.Fatalf("Failed to get messages: %v", err)
 	}
 
-	prMessages := sl.ExtractPRMessages(messages, cfg.CompleteStamp)
+	prMessages := sl.ExtractPRMessages(messages, cfg.CompleteStamp, cfg.SlackChannel)
 	if len(prMessages) == 0 {
 		log.Println("No PR links found in yesterday's messages")
 		return
@@ -78,6 +78,7 @@ func main() {
 			StatusText: statusText,
 			Mentions:   prMsg.Mentions,
 			PostedAt:   prMsg.PostedAt,
+			ThreadURL:  prMsg.ThreadURL,
 		})
 	}
 

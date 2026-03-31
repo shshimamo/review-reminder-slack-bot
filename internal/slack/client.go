@@ -2,7 +2,6 @@ package slack
 
 import (
 	"fmt"
-	"math"
 	"regexp"
 	"sort"
 	"strconv"
@@ -28,13 +27,15 @@ type PRMessage struct {
 	Number   int       // PR番号
 	URL      string    // PR URL
 	Mentions []string  // メンション文字列 (<@U123>, <!subteam^S123> 等)
-	PostedAt time.Time // Slack投稿日
+	PostedAt  time.Time // Slack投稿日
+	ThreadURL string   // 元スレリンク
 }
 
 type ChannelMessage struct {
-	Text      string
-	Reactions []string
-	Timestamp time.Time
+	Text         string
+	Reactions    []string
+	Timestamp    time.Time
+	RawTimestamp string // Slack の生タイムスタンプ（元スレリンク構築用）
 }
 
 var (
@@ -76,9 +77,10 @@ func (c *Client) GetMessages(channelID string, daysAgo int) ([]ChannelMessage, e
 			}
 			ts := parseSlackTimestamp(msg.Timestamp, now.Location())
 			allMessages = append(allMessages, ChannelMessage{
-				Text:      msg.Text,
-				Reactions: reactions,
-				Timestamp: ts,
+				Text:         msg.Text,
+				Reactions:    reactions,
+				Timestamp:    ts,
+				RawTimestamp: msg.Timestamp,
 			})
 		}
 
@@ -104,7 +106,7 @@ func parseSlackTimestamp(ts string, loc *time.Location) time.Time {
 }
 
 // ExtractPRMessages はメッセージから GitHub PR リンクとメンションを抽出する。
-func ExtractPRMessages(messages []ChannelMessage, completeStamp string) []PRMessage {
+func ExtractPRMessages(messages []ChannelMessage, completeStamp, channelID string) []PRMessage {
 	// 古い順にソートし、重複PRは最初の投稿を採用する
 	sort.Slice(messages, func(i, j int) bool {
 		return messages[i].Timestamp.Before(messages[j].Timestamp)
@@ -142,18 +144,27 @@ func ExtractPRMessages(messages []ChannelMessage, completeStamp string) []PRMess
 			var num int
 			fmt.Sscanf(number, "%d", &num)
 
+			threadURL := buildThreadURL(channelID, msg.RawTimestamp)
 			prMessages = append(prMessages, PRMessage{
-				Owner:    owner,
-				Repo:     repo,
-				Number:   num,
-				URL:      url,
-				Mentions: mentions,
-				PostedAt: msg.Timestamp,
+				Owner:     owner,
+				Repo:      repo,
+				Number:    num,
+				URL:       url,
+				Mentions:  mentions,
+				PostedAt:  msg.Timestamp,
+				ThreadURL: threadURL,
 			})
 		}
 	}
 
 	return prMessages
+}
+
+// buildThreadURL はチャンネルIDとタイムスタンプから Slack メッセージリンクを構築する。
+func buildThreadURL(channelID, ts string) string {
+	// タイムスタンプの "." を除去して Slack のリンク形式にする
+	tsForURL := strings.Replace(ts, ".", "", 1)
+	return fmt.Sprintf("https://slack.com/archives/%s/p%s", channelID, tsForURL)
 }
 
 func hasCompleteStamp(reactions []string, completeStamp string) bool {
@@ -185,9 +196,6 @@ func FormatReminderMessage(reminders []Reminder) string {
 		return reminders[i].PostedAt.Before(reminders[j].PostedAt)
 	})
 
-	now := time.Now()
-	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-
 	var b strings.Builder
 	b.WriteString("レビューリマインド\n")
 
@@ -196,13 +204,12 @@ func FormatReminderMessage(reminders []Reminder) string {
 		dateKey := r.PostedAt.Format("1/2")
 		if dateKey != currentDate {
 			currentDate = dateKey
-			daysElapsed := int(math.Floor(today.Sub(time.Date(r.PostedAt.Year(), r.PostedAt.Month(), r.PostedAt.Day(), 0, 0, 0, 0, r.PostedAt.Location())).Hours() / 24))
-			b.WriteString(fmt.Sprintf("\n%s(%d日経過)\n", dateKey, daysElapsed))
+			b.WriteString(fmt.Sprintf("\n%s\n", dateKey))
 		}
 		if len(r.Mentions) > 0 {
 			b.WriteString(strings.Join(r.Mentions, " ") + "\n")
 		}
-		b.WriteString(fmt.Sprintf("<%s|%s/%s#%d> - %s / %s\n", r.URL, r.Owner, r.Repo, r.Number, r.Title, r.StatusText))
+		b.WriteString(fmt.Sprintf("<%s|%s#%d> - %s / %s (<%s|元スレ>)\n", r.URL, r.Repo, r.Number, r.Title, r.StatusText, r.ThreadURL))
 	}
 
 	return b.String()
@@ -217,4 +224,5 @@ type Reminder struct {
 	StatusText string    // レビュー状況のテキスト
 	Mentions   []string  // メンション
 	PostedAt   time.Time // Slack投稿日
+	ThreadURL  string    // 元スレリンク
 }
