@@ -6,3 +6,4 @@ run: build
 
 dev:
 	go run ./cmd
+
