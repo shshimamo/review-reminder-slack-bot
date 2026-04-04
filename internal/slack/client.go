@@ -22,13 +22,13 @@ func NewClient(token string) *Client {
 }
 
 type PRMessage struct {
-	Owner    string    // PRオーナー
-	Repo     string    // PRリポジトリ
-	Number   int       // PR番号
-	URL      string    // PR URL
-	Mentions []string  // メンション文字列 (<@U123>, <!subteam^S123> 等)
+	Owner     string    // PRオーナー
+	Repo      string    // PRリポジトリ
+	Number    int       // PR番号
+	URL       string    // PR URL
+	Mentions  []string  // メンション文字列 (<@U123>, <!subteam^S123> 等)
 	PostedAt  time.Time // Slack投稿日
-	ThreadURL string   // 元スレリンク
+	ThreadURL string    // 元スレリンク
 }
 
 type ChannelMessage struct {
@@ -186,30 +186,50 @@ func (c *Client) PostMessage(channelID, text string) error {
 }
 
 // FormatReminderMessage はリマインドメッセージを投稿日ごとにグループ化して生成する。
-func FormatReminderMessage(reminders []Reminder) string {
+func FormatReminderMessage(reminders []Reminder, completeStamp string) string {
 	if len(reminders) == 0 {
 		return ""
 	}
 
-	// 投稿日の古い順にソート
-	sort.Slice(reminders, func(i, j int) bool {
-		return reminders[i].PostedAt.Before(reminders[j].PostedAt)
-	})
+	// 正常分と失敗分に分離
+	var normal, failed []Reminder
+	for _, r := range reminders {
+		if r.IsFailed {
+			failed = append(failed, r)
+		} else {
+			normal = append(normal, r)
+		}
+	}
 
 	var b strings.Builder
-	b.WriteString("レビューリマインド\n")
 
-	var currentDate string
-	for _, r := range reminders {
-		dateKey := r.PostedAt.Format("1/2")
-		if dateKey != currentDate {
-			currentDate = dateKey
-			b.WriteString(fmt.Sprintf("\n%s\n", dateKey))
+	if len(normal) > 0 {
+		// 投稿日の古い順にソート
+		sort.Slice(normal, func(i, j int) bool {
+			return normal[i].PostedAt.Before(normal[j].PostedAt)
+		})
+
+		b.WriteString("レビューリマインド\n")
+
+		var currentDate string
+		for _, r := range normal {
+			dateKey := r.PostedAt.Format("1/2")
+			if dateKey != currentDate {
+				currentDate = dateKey
+				b.WriteString(fmt.Sprintf("\n%s\n", dateKey))
+			}
+			if len(r.Mentions) > 0 {
+				b.WriteString(strings.Join(r.Mentions, " ") + "\n")
+			}
+			b.WriteString(fmt.Sprintf("<%s|%s#%d> - %s / %s (<%s|元スレ>)\n", r.URL, r.Repo, r.Number, r.Title, r.StatusText, r.ThreadURL))
 		}
-		if len(r.Mentions) > 0 {
-			b.WriteString(strings.Join(r.Mentions, " ") + "\n")
+	}
+
+	if len(failed) > 0 {
+		b.WriteString(fmt.Sprintf("\n以下は閲覧権限がありませんでした。リマインド不要の場合は :%s: を押してください\n", completeStamp))
+		for _, f := range failed {
+			b.WriteString(fmt.Sprintf("<%s|%s#%d> (<%s|元スレ>)\n", f.URL, f.Repo, f.Number, f.ThreadURL))
 		}
-		b.WriteString(fmt.Sprintf("<%s|%s#%d> - %s / %s (<%s|元スレ>)\n", r.URL, r.Repo, r.Number, r.Title, r.StatusText, r.ThreadURL))
 	}
 
 	return b.String()
@@ -225,4 +245,5 @@ type Reminder struct {
 	Mentions   []string  // メンション
 	PostedAt   time.Time // Slack投稿日
 	ThreadURL  string    // 元スレリンク
+	IsFailed   bool      // GitHub API 取得失敗
 }

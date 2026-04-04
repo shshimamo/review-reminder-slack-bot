@@ -59,6 +59,14 @@ func main() {
 		status, err := githubClient.GetReviewStatus(ctx, prMsg.Owner, prMsg.Repo, prMsg.Number)
 		if err != nil {
 			log.Printf("Warning: failed to get review status for %s: %v", prMsg.URL, err)
+			reminders = append(reminders, sl.Reminder{
+				Repo:      prMsg.Repo,
+				Number:    prMsg.Number,
+				URL:       prMsg.URL,
+				PostedAt:  prMsg.PostedAt,
+				ThreadURL: prMsg.ThreadURL,
+				IsFailed:  true,
+			})
 			continue
 		}
 
@@ -97,7 +105,7 @@ func main() {
 		return
 	}
 
-	message := sl.FormatReminderMessage(reminders)
+	message := sl.FormatReminderMessage(reminders, cfg.CompleteStamp)
 	if err := slackClient.PostMessage(cfg.SlackChannel, message); err != nil {
 		log.Fatalf("Failed to post reminder: %v", err)
 	}
