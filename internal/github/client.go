@@ -3,7 +3,9 @@ package github
 import (
 	"context"
 	"fmt"
+	"net/http"
 
+	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v69/github"
 )
 
@@ -11,21 +13,33 @@ type Client struct {
 	client *github.Client
 }
 
-func NewClient(token string) *Client {
+// NewClientWithToken は PAT を使って GitHub クライアントを作成する。
+func NewClientWithToken(token string) *Client {
 	return &Client{
 		client: github.NewClient(nil).WithAuthToken(token),
 	}
 }
 
+// NewClientWithApp は GitHub App を使って GitHub クライアントを作成する。
+func NewClientWithApp(appID, installationID int64, privateKey string) (*Client, error) {
+	transport, err := ghinstallation.New(http.DefaultTransport, appID, installationID, []byte(privateKey))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GitHub App transport: %w", err)
+	}
+	return &Client{
+		client: github.NewClient(&http.Client{Transport: transport}),
+	}, nil
+}
+
 type ReviewStatus struct {
-	Owner     string
-	Repo      string
-	Number    int
-	Title     string
-	IsMerged  bool
-	IsClosed           bool
-	HasPendingReview   bool   // レビュー待ちの人/チームがいるか
-	Approvals          []string // Approve 済みのレビュアーのログイン名
+	Owner            string
+	Repo             string
+	Number           int
+	Title            string
+	IsMerged         bool
+	IsClosed         bool
+	HasPendingReview bool     // レビュー待ちの人/チームがいるか
+	Approvals        []string // Approve 済みのレビュアーのログイン名
 }
 
 func (c *Client) GetReviewStatus(ctx context.Context, owner, repo string, number int) (*ReviewStatus, error) {
@@ -35,10 +49,10 @@ func (c *Client) GetReviewStatus(ctx context.Context, owner, repo string, number
 	}
 
 	status := &ReviewStatus{
-		Owner:    owner,
-		Repo:     repo,
-		Number:   number,
-		Title:    pr.GetTitle(),
+		Owner:            owner,
+		Repo:             repo,
+		Number:           number,
+		Title:            pr.GetTitle(),
 		IsMerged:         pr.GetMerged(),
 		IsClosed:         pr.GetState() == "closed",
 		HasPendingReview: len(pr.RequestedReviewers) > 0 || len(pr.RequestedTeams) > 0,

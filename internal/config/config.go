@@ -9,10 +9,17 @@ import (
 type Config struct {
 	SlackBotToken           string
 	SlackChannel            string
-	GitHubToken             string
+	GitHubToken             string // PAT 方式
+	GitHubAppID             int64  // GitHub App 方式
+	GitHubAppPrivateKey     string
+	GitHubAppInstallationID int64
 	CompleteStamp           string
 	RequiredApprovalsNumber int
-	DaysAgo                int
+	DaysAgo                 int
+}
+
+func (c *Config) UseGitHubApp() bool {
+	return c.GitHubAppID != 0
 }
 
 func Load() (*Config, error) {
@@ -24,11 +31,6 @@ func Load() (*Config, error) {
 	slackChannel := os.Getenv("SLACK_CHANNEL")
 	if slackChannel == "" {
 		return nil, fmt.Errorf("SLACK_CHANNEL is required")
-	}
-
-	githubToken := os.Getenv("GITHUB_TOKEN")
-	if githubToken == "" {
-		return nil, fmt.Errorf("GITHUB_TOKEN is required")
 	}
 
 	completeStamp := os.Getenv("COMPLETE_STAMP")
@@ -53,12 +55,43 @@ func Load() (*Config, error) {
 		}
 	}
 
-	return &Config{
+	cfg := &Config{
 		SlackBotToken:           slackBotToken,
 		SlackChannel:            slackChannel,
-		GitHubToken:             githubToken,
 		CompleteStamp:           completeStamp,
 		RequiredApprovalsNumber: requiredApprovals,
-		DaysAgo:                daysAgo,
-	}, nil
+		DaysAgo:                 daysAgo,
+	}
+
+	// GitHub App 方式
+	if appIDStr := os.Getenv("GITHUB_APP_ID"); appIDStr != "" {
+		cfg.GitHubAppID, err = strconv.ParseInt(appIDStr, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("GITHUB_APP_ID must be a number: %w", err)
+		}
+
+		cfg.GitHubAppPrivateKey = os.Getenv("GITHUB_APP_PRIVATE_KEY")
+		if cfg.GitHubAppPrivateKey == "" {
+			return nil, fmt.Errorf("GITHUB_APP_PRIVATE_KEY is required when GITHUB_APP_ID is set")
+		}
+
+		installIDStr := os.Getenv("GITHUB_APP_INSTALLATION_ID")
+		if installIDStr == "" {
+			return nil, fmt.Errorf("GITHUB_APP_INSTALLATION_ID is required when GITHUB_APP_ID is set")
+		}
+		cfg.GitHubAppInstallationID, err = strconv.ParseInt(installIDStr, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("GITHUB_APP_INSTALLATION_ID must be a number: %w", err)
+		}
+
+		return cfg, nil
+	}
+
+	// PAT 方式
+	cfg.GitHubToken = os.Getenv("GITHUB_TOKEN")
+	if cfg.GitHubToken == "" {
+		return nil, fmt.Errorf("GITHUB_TOKEN or GITHUB_APP_ID is required")
+	}
+
+	return cfg, nil
 }

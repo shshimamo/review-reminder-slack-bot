@@ -178,7 +178,7 @@ func hasCompleteStamp(reactions []string, completeStamp string) bool {
 
 // PostMessage はチャンネルにメッセージを投稿する。
 func (c *Client) PostMessage(channelID, text string) error {
-	_, _, err := c.api.PostMessage(channelID, slack.MsgOptionText(text, false))
+	_, _, err := c.api.PostMessage(channelID, slack.MsgOptionText(text, false), slack.MsgOptionDisableLinkUnfurl())
 	if err != nil {
 		return fmt.Errorf("failed to post message: %w", err)
 	}

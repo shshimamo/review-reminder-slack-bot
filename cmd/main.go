@@ -29,7 +29,17 @@ func main() {
 	}
 
 	slackClient := sl.NewClient(cfg.SlackBotToken)
-	githubClient := gh.NewClient(cfg.GitHubToken)
+
+	var githubClient *gh.Client
+	if cfg.UseGitHubApp() {
+		var err error
+		githubClient, err = gh.NewClientWithApp(cfg.GitHubAppID, cfg.GitHubAppInstallationID, cfg.GitHubAppPrivateKey)
+		if err != nil {
+			log.Fatalf("Failed to create GitHub App client: %v", err)
+		}
+	} else {
+		githubClient = gh.NewClientWithToken(cfg.GitHubToken)
+	}
 
 	messages, err := slackClient.GetMessages(cfg.SlackChannel, cfg.DaysAgo)
 	if err != nil {

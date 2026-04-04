@@ -6,3 +6,9 @@ run: build
 
 dev:
 	go run ./cmd
+
+docker-build:
+	docker build -t review-reminder-slack-bot .
+
+docker-run:
+	docker run --env-file .env review-reminder-slack-bot
